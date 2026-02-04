@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Quản lý Sản phẩm</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .sort-icon { margin-left: 0.25rem; font-size: 0.75em; }
+        [data-sort] { cursor: pointer; }
+        [data-sort]:hover { text-decoration: underline; }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container-fluid py-4">
+        <h1 class="mb-4">Dashboard Quản lý Sản phẩm</h1>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Danh sách sản phẩm</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="searchTitle" class="form-label">Tìm theo title</label>
+                    <input type="text" class="form-control" id="searchTitle" placeholder="Nhập title để tìm kiếm..." autocomplete="off">
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th><span role="button" class="user-select-none" id="sortTitle" data-sort="title" title="Sắp xếp theo title">Title</span> <span id="sortTitleIcon" class="sort-icon"></span></th>
+                                <th><span role="button" class="user-select-none" id="sortPrice" data-sort="price" title="Sắp xếp theo giá">Price</span> <span id="sortPriceIcon" class="sort-icon"></span></th>
+                                <th>Category</th>
+                                <th>Images</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productTableBody">
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">Đang tải dữ liệu...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="d-flex flex-wrap align-items-center gap-3 mt-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <label for="pageSize" class="form-label mb-0">Số item/trang:</label>
+                        <select class="form-select form-select-sm" id="pageSize" style="width: auto;">
+                            <option value="5">5</option>
+                            <option value="10" selected>10</option>
+                            <option value="20">20</option>
+                        </select>
+                    </div>
+                    <nav aria-label="Phân trang">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item"><button type="button" class="page-link" id="btnPrev">Trang trước</button></li>
+                            <li class="page-item disabled"><span class="page-link" id="pageInfo">Trang 1 / 1</span></li>
+                            <li class="page-item"><button type="button" class="page-link" id="btnNext">Trang sau</button></li>
+                        </ul>
+                    </nav>
+                    <button type="button" class="btn btn-primary btn-sm" id="btnCreateProduct">Tạo sản phẩm</button>
+                    <button type="button" class="btn btn-success btn-sm" id="btnExportCsv">Export CSV</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal xem chi tiết & chỉnh sửa -->
+    <div class="modal fade" id="productDetailModal" tabindex="-1" aria-labelledby="productDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="productDetailModalLabel">Chi tiết sản phẩm</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="productDetailView">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-3">ID</dt><dd class="col-sm-9" id="detailId">-</dd>
+                            <dt class="col-sm-3">Title</dt><dd class="col-sm-9" id="detailTitle">-</dd>
+                            <dt class="col-sm-3">Price</dt><dd class="col-sm-9" id="detailPrice">-</dd>
+                            <dt class="col-sm-3">Description</dt><dd class="col-sm-9" id="detailDescription">-</dd>
+                            <dt class="col-sm-3">Category</dt><dd class="col-sm-9" id="detailCategory">-</dd>
+                            <dt class="col-sm-3">Images</dt><dd class="col-sm-9" id="detailImages">-</dd>
+                        </dl>
+                    </div>
+                    <div id="productDetailEdit" class="d-none">
+                        <input type="hidden" id="editProductId">
+                        <div class="mb-3">
+                            <label for="editTitle" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="editTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editPrice" class="form-label">Price</label>
+                            <input type="number" class="form-control" id="editPrice" step="0.01" min="0" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="editDescription" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editCategoryId" class="form-label">Category</label>
+                            <select class="form-select" id="editCategoryId"></select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editImages" class="form-label">Images (mỗi URL một dòng)</label>
+                            <textarea class="form-control" id="editImages" rows="2" placeholder="https://..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-warning d-none" id="btnCancelEdit">Hủy</button>
+                    <button type="button" class="btn btn-primary" id="btnEditProduct">Chỉnh sửa</button>
+                    <button type="button" class="btn btn-success d-none" id="btnSaveProduct">Lưu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal tạo mới sản phẩm -->
+    <div class="modal fade" id="productCreateModal" tabindex="-1" aria-labelledby="productCreateModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="productCreateModalLabel">Tạo sản phẩm mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="createTitle" class="form-label">Title <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="createTitle" required placeholder="Tên sản phẩm">
+                    </div>
+                    <div class="mb-3">
+                        <label for="createPrice" class="form-label">Price <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="createPrice" step="0.01" min="0" required placeholder="0">
+                    </div>
+                    <div class="mb-3">
+                        <label for="createDescription" class="form-label">Description <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="createDescription" rows="3" required placeholder="Mô tả sản phẩm"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="createCategoryId" class="form-label">Category <span class="text-danger">*</span></label>
+                        <select class="form-select" id="createCategoryId" required></select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="createImages" class="form-label">Images (mỗi URL một dòng, ít nhất 1) <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="createImages" rows="3" required placeholder="https://placehold.co/600x400"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary" id="btnSubmitCreate">Tạo sản phẩm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS (bundle gồm Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
